@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int       @id @default(autoincrement())
+  telegramId  String    @unique
+  username    String?
+  firstName   String?
+  lastName    String?
+  tariff      Tariff    @default(FREE)
+  createdAt   DateTime  @default(now())
+  invites     Invite[]
+  payments    Payment[]
+}
+
+enum Tariff {
+  FREE
+  LIGHT
+  PREMIUM
+}
+
+model Invite {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id])
+  slug            String    @unique
+  templateId      Int
+  template        Template  @relation(fields: [templateId], references: [id])
+  envelopeId      Int
+  envelope        Envelope  @relation(fields: [envelopeId], references: [id])
+  language        String    @default("ru")
+  brideName       String
+  groomName       String
+  ceremonyDate    DateTime
+  ceremonyTime    String
+  ceremonyPlace   String
+  ceremonyMapUrl  String?
+  hasBanquet      Boolean   @default(false)
+  banquetDate     DateTime?
+  banquetTime     String?
+  banquetPlace    String?
+  banquetMapUrl   String?
+  hasTransfer     Boolean   @default(false)
+  transferDetails String?
+  dressCodeId     Int?
+  dressCode       DressCode? @relation(fields: [dressCodeId], references: [id])
+  giftWishes      String?
+  contacts        String?
+  couplePhoto     String?
+  illustrationId  Int?
+  illustration    Illustration? @relation(fields: [illustrationId], references: [id])
+  musicId         Int?
+  music           Music? @relation(fields: [musicId], references: [id])
+  blockOrder      Json      @default("[\"timer\",\"program\",\"dressCode\",\"transfer\",\"map\",\"gifts\",\"contacts\",\"rsvp\"]")
+  watermark       Boolean   @default(true)
+  isPublished     Boolean   @default(false)
+  expiresAt       DateTime  @default(dbgenerated("NOW() + INTERVAL '1 year'"))
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  guests          Guest[]
+  analytics       Analytics?
+}
+
+model Template {
+  id          Int       @id @default(autoincrement())
+  name        String
+  style       String
+  css         String
+  thumbnail   String
+  isPremium   Boolean   @default(false)
+  isLight     Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  invites     Invite[]
+}
+
+model Envelope {
+  id          Int       @id @default(autoincrement())
+  name        String
+  style       String
+  image       String
+  sealImage   String
+  isPremium   Boolean   @default(false)
+  isLight     Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  invites     Invite[]
+}
+
+model DressCode {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String
+  colors      Json
+  image       String
+  isPremium   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  invites     Invite[]
+}
+
+model Illustration {
+  id          Int       @id @default(autoincrement())
+  url         String
+  category    String
+  tags        String[]
+  createdAt   DateTime  @default(now())
+  invites     Invite[]
+}
+
+model Music {
+  id          Int       @id @default(autoincrement())
+  name        String
+  artist      String
+  url         String
+  duration    Int
+  isPremium   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  invites     Invite[]
+}
+
+model Guest {
+  id          Int       @id @default(autoincrement())
+  inviteId    Int
+  invite      Invite    @relation(fields: [inviteId], references: [id])
+  name        String
+  telegramId  String?
+  isPair      Boolean   @default(false)
+  pairName    String?
+  rsvpStatus  RsvpStatus @default(PENDING)
+  rsvpDate    DateTime?
+  transferNeed TransferType @default(SELF)
+  message     String?
+  createdAt   DateTime  @default(now())
+}
+
+enum RsvpStatus {
+  PENDING
+  ATTENDING
+  NOT_ATTENDING
+  MAYBE
+}
+
+enum TransferType {
+  SELF
+  CAR
+  NEED
+}
+
+model Payment {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id])
+  amount      Int
+  tariff      Tariff
+  status      PaymentStatus @default(PENDING)
+  yookassaId  String?
+  createdAt   DateTime  @default(now())
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+model Analytics {
+  id              Int       @id @default(autoincrement())
+  inviteId        Int       @unique
+  invite          Invite    @relation(fields: [inviteId], references: [id])
+  opens           Int       @default(0)
+  scrollDepth     Json      @default("{}")
+  musicPlays      Int       @default(0)
+  musicDuration   Int       @default(0)
+  mapClicks       Int       @default(0)
+  rsvpCount       Int       @default(0)
+  transferRequests Int      @default(0)
+  updatedAt       DateTime  @updatedAt
+}
